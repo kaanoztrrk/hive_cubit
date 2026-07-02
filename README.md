@@ -1,5 +1,7 @@
 # hive_cubit
 
+[![pub package](https://img.shields.io/pub/v/hive_cubit.svg)](https://pub.dev/packages/hive_cubit)
+
 A lightweight [`Cubit`](https://pub.dev/packages/bloc) that automatically
 persists its state to a [Hive](https://pub.dev/packages/hive) box —
 zero boilerplate, no manual `box.put()` calls.
@@ -22,8 +24,10 @@ class SettingsCubit extends HiveCubit<SettingsModel> {
           initialState: SettingsModel.initial(),
         );
 
-  void updateTheme(String theme) {
-    updateState(state.copyWith(theme: theme));
+  // updateState returns a Future — await it if you want to be sure
+  // the write to disk has completed before moving on.
+  Future<void> updateTheme(String theme) {
+    return updateState(state.copyWith(theme: theme));
   }
 }
 ```
@@ -42,11 +46,20 @@ void main() async {
 
 Every call to `updateState(newState)` does two things:
 
-1. Emits `newState` to any `BlocBuilder`/`BlocListener` watching the cubit.
-2. Writes `newState` to the Hive box under `key`.
+1. Emits `newState` immediately to any `BlocBuilder`/`BlocListener` watching
+   the cubit.
+2. Waits for the underlying box to be ready, then writes `newState` to the
+   Hive box under `key`.
+
+Because step 2 is asynchronous, `updateState` returns a `Future<void>`.
+You don't have to await it — the emit already happened synchronously — but
+awaiting it guarantees the write finished, which is useful right before
+closing the app or navigating away.
 
 On the next app launch, the cubit reads the persisted value back before
-emitting its first state — no extra code required.
+emitting its first state — no extra code required. See
+[`example/hive_cubit_example.dart`](example/hive_cubit_example.dart) for a
+runnable, step-by-step walkthrough of this loading behavior.
 
 ## Notes
 
@@ -56,6 +69,11 @@ emitting its first state — no extra code required.
   a registered adapter).
 - This package does not call `Hive.init()`/`Hive.initFlutter()` for you —
   call it once during app startup, as you normally would.
+- Closing a `HiveCubit` (via `close()`) does **not** close its underlying
+  Hive box, since the box may be shared elsewhere in your app. Close boxes
+  explicitly with `Hive.box(name).close()` if and when appropriate.
+- If the box fails to open, `HiveCubit` throws a `HiveCubitException`
+  with a descriptive message instead of a raw `HiveError`.
 
 ## License
 

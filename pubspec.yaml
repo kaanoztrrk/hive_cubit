@@ -1,6 +1,6 @@
 name: hive_cubit
 description: "A lightweight HiveCubit that auto-persists Cubit state to a Hive box with zero boilerplate."
-version: 0.1.0
+version: 0.1.1
 homepage: https://kaan.codes
 repository: https://github.com/theviacoder/hive_cubit
 

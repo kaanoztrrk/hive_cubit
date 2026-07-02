@@ -11,3 +11,10 @@
   persisting if called before the underlying box finished opening.
 - Added `HiveCubitException` for clearer error messages.
 - Documented that closing a `HiveCubit` does not close its Hive box.
+
+## 0.1.1
+
+- Rewrote the example with step-by-step console output explaining
+  the `ready` pattern.
+- Updated README examples and notes to match the async `updateState`
+  signature, `HiveCubitException`, and box-close behavior from 0.1.0.
