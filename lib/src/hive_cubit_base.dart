@@ -1,6 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:hive/hive.dart';
 
+import 'hive_cubit_exception.dart';
+
 /// A [Cubit] that automatically persists its state to a Hive box.
 ///
 /// Extend this class instead of [Cubit] to get zero-boilerplate
@@ -26,6 +28,11 @@ import 'package:hive/hive.dart';
 /// final cubit = SettingsCubit();
 /// await cubit.ready; // ensures persisted state (if any) is loaded
 /// ```
+///
+/// /// Note: closing this cubit via [close] does NOT close the underlying
+/// Hive box, since the same box may be shared by other cubits or parts
+/// of your app. Close boxes explicitly via `Hive.box(name).close()` if
+/// and when appropriate.
 abstract class HiveCubit<T> extends Cubit<T> {
   HiveCubit({
     required this.boxName,
@@ -49,9 +56,13 @@ abstract class HiveCubit<T> extends Cubit<T> {
   Box? _box;
 
   Future<void> _init() async {
-    _box = Hive.isBoxOpen(boxName)
-        ? Hive.box(boxName)
-        : await Hive.openBox(boxName);
+    try {
+      _box = Hive.isBoxOpen(boxName)
+          ? Hive.box(boxName)
+          : await Hive.openBox(boxName);
+    } catch (e) {
+      throw HiveCubitException('Failed to open box "$boxName": $e');
+    }
 
     final saved = _box!.get(key);
     if (saved != null && saved is T) {
@@ -64,8 +75,9 @@ abstract class HiveCubit<T> extends Cubit<T> {
   /// If the box has not finished opening yet, the emit still happens
   /// immediately but the write is skipped for this call; the next
   /// call to [updateState] will persist the latest value.
-  void updateState(T newState) {
+  Future<void> updateState(T newState) async {
     emit(newState);
-    _box?.put(key, newState);
+    await ready;
+    await _box?.put(key, newState);
   }
 }

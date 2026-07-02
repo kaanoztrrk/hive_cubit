@@ -5,10 +5,9 @@ import 'package:test/test.dart';
 
 // A tiny cubit under test — mirrors how a real user would extend HiveCubit.
 class CounterCubit extends HiveCubit<int> {
-  CounterCubit()
-      : super(boxName: 'counter_box', key: 'count', initialState: 0);
+  CounterCubit() : super(boxName: 'counter_box', key: 'count', initialState: 0);
 
-  void increment() => updateState(state + 1);
+  Future<void> increment() => updateState(state + 1);
 }
 
 void main() {
@@ -32,7 +31,7 @@ void main() {
     final cubit = CounterCubit();
     await cubit.ready;
 
-    cubit.increment();
+    await cubit.increment();
 
     expect(cubit.state, 1);
 
